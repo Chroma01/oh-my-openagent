@@ -24,6 +24,21 @@ import type {
 	ToolkitUnknownRequest,
 } from "./types.js";
 
+// The SDK takes inline values only, so a snapshot that is not JSON is a caller error - normalize it
+// to the same stable code the CLI reports instead of letting it surface as a generic failure.
+function validateCodexGoalJson(raw: string | undefined): void {
+	if (raw === undefined) return;
+	try {
+		JSON.parse(raw);
+	} catch (error) {
+		throw new UlwLoopError(
+			`Invalid codexGoal: ${error instanceof Error ? error.message : "not valid JSON"}`,
+			"ULW_LOOP_CODEX_GOAL_JSON_INVALID",
+			{ cause: error },
+		);
+	}
+}
+
 function validateContext(context: ToolkitContext): void {
 	if (!context.cwd.trim()) throw new UlwLoopError("cwd is required.", "ULW_LOOP_CWD_REQUIRED");
 	if (!context.sessionId.trim())
@@ -61,6 +76,15 @@ function unreachable(value: never): never {
 function nextActionsFrom(result: object): readonly string[] {
 	if (!("nextActions" in result) || !Array.isArray(result.nextActions)) return [];
 	return result.nextActions.filter((action): action is string => typeof action === "string").slice(0, 8);
+}
+
+function checkpointWithValidatedSnapshot(
+	context: ToolkitContext,
+	scope: UlwLoopScope,
+	args: Exclude<CheckpointArgs, { readonly printTemplate: true }>,
+): ReturnType<typeof checkpointUlwLoop> {
+	validateCodexGoalJson(args.codexGoalJson);
+	return checkpointUlwLoop(context.cwd, args, scope, { surface: context.surface });
 }
 
 export function createAgentToolkit(context: ToolkitContext, deps: AgentToolkitDependencies = {}): AgentToolkit {
@@ -139,7 +163,7 @@ export function createAgentToolkit(context: ToolkitContext, deps: AgentToolkitDe
 			invoke("checkpoint", () =>
 				args.printTemplate === true
 					? checkpointTemplate(context.cwd, scope, args.goalId, { surface: context.surface })
-					: checkpointUlwLoop(context.cwd, args, scope, { surface: context.surface }),
+					: checkpointWithValidatedSnapshot(context, scope, args),
 			),
 		steer: (args) => invoke("steer", () => steerUlwLoop(context.cwd, args, scope)),
 		addGoal: (args) => invoke("add-goal", () => addUlwLoopGoal(context.cwd, args, scope)),
