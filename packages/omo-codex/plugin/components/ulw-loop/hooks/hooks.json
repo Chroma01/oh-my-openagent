@@ -14,7 +14,7 @@
 		],
 		"PostToolUse": [
 			{
-				"matcher": "^(spawn_agent|collaborationspawn_agent|collaboration\\.spawn_agent)$",
+				"matcher": "^(spawn_agent|multi_agent_v1\\.spawn_agent|collaborationspawn_agent|collaboration\\.spawn_agent)$",
 				"hooks": [
 					{
 						"type": "command",
@@ -38,7 +38,7 @@
 				]
 			},
 			{
-				"matcher": "^(spawn_agent|collaborationspawn_agent|collaboration\\.spawn_agent)$",
+				"matcher": "^(spawn_agent|multi_agent_v1\\.spawn_agent|collaborationspawn_agent|collaboration\\.spawn_agent)$",
 				"hooks": [
 					{
 						"type": "command",
