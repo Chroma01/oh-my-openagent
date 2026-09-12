@@ -15,8 +15,20 @@ function createTemporaryDirectory(prefix: string): string {
 afterEach(() => {
   for (const directory of temporaryDirectories.splice(0)) {
     // Windows can transiently report EBUSY while the OS releases the fake bash.exe image of
-    // the just-exited child; retrying the removal is a no-op on POSIX platforms.
-    rmSync(directory, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
+    // the just-exited child.  Bun's rmSync does not retry on EBUSY, so we loop manually.
+    const MAX_ATTEMPTS = 10;
+    const DELAY_MS = 200;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+      try {
+        rmSync(directory, { recursive: true, force: true });
+        break;
+      } catch (error: unknown) {
+        const code = error !== null && typeof error === "object" && "code" in error ? (error as { code: string }).code : "";
+        if (code !== "EBUSY" && code !== "EPERM" && code !== "ENOTEMPTY") throw error;
+        if (attempt + 1 >= MAX_ATTEMPTS) throw error;
+        Bun.sleepSync(DELAY_MS);
+      }
+    }
   }
 });
 
