@@ -314,13 +314,15 @@ describe("kibitzer sidecar retention", () => {
     const f = await fixture()
     const recall = f.context.identityPaths.recall
     const locks = f.context.identityPaths.locks
-    const eightDaysAgo = Date.now() - 8 * DAY_MS
+    // Age is measured against the fixture's pinned clock, the same clock the sweep reads; deriving it
+    // from wall-clock time instead makes the test pass or fail depending on the day it runs.
+    const eightDaysAgo = f.clock.now - 8 * DAY_MS
     expect(KIBITZER_SIDECAR_RETENTION_MS).toBe(7 * DAY_MS)
 
     const stale = await sidecarDirWithTranscript(f.context, "stale-session", eightDaysAgo)
     const active = await sidecarDirWithTranscript(f.context, "active-session", eightDaysAgo)
     const otherProcess = await sidecarDirWithTranscript(f.context, "other-process-session", eightDaysAgo)
-    const fresh = await sidecarDirWithTranscript(f.context, "fresh-session", Date.now())
+    const fresh = await sidecarDirWithTranscript(f.context, "fresh-session", f.clock.now)
     const tombstone = join(recall, "sidecars", ".prune-leftover")
     await mkdir(tombstone, { recursive: true })
     await writeFile(join(tombstone, "child.jsonl"), "{}\n")
