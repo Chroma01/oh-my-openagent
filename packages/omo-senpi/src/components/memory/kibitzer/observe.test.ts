@@ -316,6 +316,7 @@ describe("kibitzer sidecar retention", () => {
     const locks = f.context.identityPaths.locks
     // Age is measured against the fixture's pinned clock, the same clock the sweep reads; deriving it
     // from wall-clock time instead makes the test pass or fail depending on the day it runs.
+    const now = () => f.clock.now
     const eightDaysAgo = f.clock.now - 8 * DAY_MS
     expect(KIBITZER_SIDECAR_RETENTION_MS).toBe(7 * DAY_MS)
 
@@ -331,7 +332,7 @@ describe("kibitzer sidecar retention", () => {
     const foreign = await createLockRecord("recall-sidecar")
     await acquireLock(kibitzerSidecarOwnerLockPath(locks, "other-process-session"), foreign)
 
-    const first = await pruneKibitzerSidecars({ recallDir: recall, locksDir: locks, owned: new Set([basename(active)]) })
+    const first = await pruneKibitzerSidecars({ recallDir: recall, locksDir: locks, now, owned: new Set([basename(active)]) })
     expect(first.pruned).toEqual([basename(stale)])
     expect([...first.kept].sort()).toEqual([basename(active), basename(fresh), basename(otherProcess)].sort())
     expect(existsSync(stale)).toBe(false)
@@ -340,7 +341,7 @@ describe("kibitzer sidecar retention", () => {
 
     // The owner lock alone kept `other-process-session`: once its owner lets go, the aged directory is prunable.
     expect(await releaseLock(kibitzerSidecarOwnerLockPath(locks, "other-process-session"), foreign)).toBe(true)
-    const second = await pruneKibitzerSidecars({ recallDir: recall, locksDir: locks, owned: new Set([basename(active)]) })
+    const second = await pruneKibitzerSidecars({ recallDir: recall, locksDir: locks, now, owned: new Set([basename(active)]) })
     expect(second.pruned).toEqual([basename(otherProcess)])
     expect(existsSync(active)).toBe(true)
 
