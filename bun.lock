@@ -177,6 +177,9 @@
     "packages/memory-core": {
       "name": "@oh-my-opencode/memory-core",
       "version": "0.1.0",
+      "devDependencies": {
+        "yaml": "2.9.0",
+      },
     },
     "packages/model-core": {
       "name": "@oh-my-opencode/model-core",
