@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Engine: senpi 2026.9.13
+
+**OMO Native now runs on the fully upstream-synced senpi harness.** senpi merged the upstream engine (earendil-works/pi) across the session and storage layer, the protocol v8 / Chord transport, the fullscreen TUI renderer, the clipboard natives, and the model catalogs, while every fork invariant — CalVer, the CLI, the JSONL RPC surface, the Astra overlays, themes, gist share, and the held dependency pins — survived the merge. The changes below are the ones you can see.
+
+**Extensions can stream model calls.** `ctx.modelRegistry.stream()` and `streamSimple()` let an extension drive a configured provider with resolved authentication, so extension-authored tools talk to models the way the core does.
+
+**Compaction is tunable per model.** `compaction.modelOverrides` adds per-model `reserveTokens` and `keepRecentTokens`, falling back to the ordinary compaction settings; `compaction.model` still picks the summarizer.
+
+**The async ask-user question is reachable without a chord.** Pressing Enter on an empty editor or running `/answer` opens the pending question when a terminal, multiplexer, or rival keymap swallows the shortcut, and the shortcut itself is now the rebindable `app.question.answer` keybinding (default `alt+a`, `option+a` on macOS) listed in `/hotkeys`. The widget above the editor now shows the pending question and its options inline.
+
+**Built-in tools sample against their schemas by default.** `read`, `bash`, `powershell`, `edit`, and `write` now use strict-prefer JSON-schema sampling without the experimental flag; an extension can opt a tool out with `constrainedSampling: false`.
+
+**Fullscreen transcript polish.** Hold Alt to scroll the wheel five times faster, click "Jump to latest message" (or the `tui.altScreen.bottom` shortcut) to return to the bottom, and search stays fast on large transcripts through cached results and visible-only highlighting.
+
+**Retries stay responsive.** Agent-level retry backoff is capped at `retry.maxAgentDelayMs` (60s by default) so a long transient outage no longer stalls behind an ever-growing delay; the retry profiles and jitter still shape the wait under that ceiling.
+
+**Direct RPC steering runs the full input path.** `steer` and `follow_up` over the stdio RPC now go through extension `input` handlers and skill/template expansion instead of bypassing them.
+
+**Devin SWE-2 effort variants route correctly.** `swe-2-high`, `swe-2-max`, `swe-2-low`, and `swe-2-high-lite` resolve to the Kimi K3 preset.
+
+**Trusted Notification hooks.** Builtin hooks v1 gained a `Notification` event for ask-user question settlements (answer or timeout), so a user-defined trusted command can fire a desktop or mobile push on `ask-user-timeout` while hooks are enabled.
+
+**A batch of upstream correctness fixes.** No more premature missing-model errors after login (the catalog is awaited first), extension tools without a parameter schema are rejected at registration instead of breaking requests, OpenAI Codex SSE terminal events without a trailing blank line now parse, skills stay available when Bash is the only enabled tool, image EXIF orientation survives non-EXIF APP1 segments, imported sessions no longer overwrite a same-named session, session forks keep their compaction boundary, and managed `fd`/ripgrep downloads work on musl Linux and without the GitHub Releases API.
+
 ## [5.0.0-beta.60] - 2026-09-12
 
 ### Engine: senpi 2026.9.12-2
