@@ -24,7 +24,9 @@
   ],
   "analytics_engine_datasets": [{ "binding": "DOWNLOADS", "dataset": "omo_downloads" }],
   // ANALYTICS_TOKEN (secret) is a read-only Account Analytics token used only by the hourly rollup.
-  "vars": { "ACCOUNT_ID": "6511ce566bfe27228f536a8fb9448be5", "ANALYTICS_DATASET": "omo_downloads" },
+  // ROLLUP_FIRST_DAY: 2026-10-09 began on the previous account; it is completed by a one-time backfill (both accounts'
+  // Analytics Engine, summed), so the hourly rollup must never overwrite it with this account's part of the day.
+  "vars": { "ACCOUNT_ID": "6511ce566bfe27228f536a8fb9448be5", "ANALYTICS_DATASET": "omo_downloads", "ROLLUP_FIRST_DAY": "2026-10-10" },
   "triggers": { "crons": [] },
   "observability": { "enabled": true, "head_sampling_rate": 0.1 }
 }
