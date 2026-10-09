@@ -8,6 +8,14 @@ import {
   parseReply, requestApi, RequestFailure, serviceOrigin, SignInError, tokenSchema,
 } from "./protocol"
 
+class SessionEnded extends SignInError {
+  constructor(message: string, readonly deviceRevoked: boolean) { super(message) }
+}
+
+// The service revokes the device row before answering reauth_required on refresh (token reuse);
+// account_deleted removes the account. unauthorized and invalid_grant leave the device's slot held.
+const DEVICE_REVOKING_REFUSALS = new Set(["account_deleted", "reauth_required"])
+
 export function createSession(options: {
   readonly api: string
   readonly store: CredentialStore
@@ -29,6 +37,30 @@ export function createSession(options: {
   const request = (path: string, init: RequestInit) => requestApi(api, path, init, signal)
   const uncertain = () => new SignInError(
     "The refresh outcome is unknown. Saved credentials and keys were retained, but this refresh token will not be sent again. Retry sign-in with omo login.", true)
+  async function refreshedAccess(current: Credentials): Promise<string> {
+    if (current.refreshState === "uncertain") throw uncertain()
+    if (Date.parse(current.accessTokenExpiresAt) > Date.now() + 30_000) return current.accessToken
+    // Journal before sending: a lost response or process crash must never replay a single-use token.
+    await store.write({ ...current, refreshState: "uncertain" })
+    try {
+      const tokens = parseReply(tokenSchema, await request("/v1/session/refresh", jsonRequest({ refreshToken: current.refreshToken })))
+      await store.write({ ...current, ...tokens })
+      return tokens.accessToken
+    } catch (error) {
+      if (error instanceof ApiRefusal && error.status < 500 && ["unauthorized", "account_deleted", "reauth_required", "invalid_grant"].includes(error.code)) {
+        await store.clear()
+        throw new SessionEnded(error.code === "reauth_required"
+          ? "This session was ended because its refresh token was reused. Sign in again with omo login."
+          : "Sign in again with omo login.", DEVICE_REVOKING_REFUSALS.has(error.code))
+      }
+      if ((error instanceof RequestFailure && error.notSent) ||
+        (error instanceof ApiRefusal && error.status === 429 && error.code === "rate_limited")) {
+        await store.write(current)
+        throw error
+      }
+      throw uncertain()
+    }
+  }
   return {
     request,
     signal,
@@ -38,11 +70,17 @@ export function createSession(options: {
       return locked(async () => {
         try {
           const current = await store.read()
-          if (current !== null) await request(`/v1/devices/${encodeURIComponent(current.device.id)}`, {
-            method: "DELETE", headers: { authorization: `Bearer ${current.accessToken}` },
-          })
+          if (current !== null) {
+            if (current.refreshState === "uncertain") return false
+            const access = Date.parse(current.accessTokenExpiresAt) <= Date.now()
+              ? await refreshedAccess(current) : current.accessToken
+            await request(`/v1/devices/${encodeURIComponent(current.device.id)}`, {
+              method: "DELETE", headers: { authorization: `Bearer ${access}` },
+            })
+          }
           return true
         } catch (error) {
+          if (error instanceof SessionEnded) return error.deviceRevoked
           if (error instanceof SignInError) return false
           throw error
         } finally { await store.clear() }
@@ -52,28 +90,7 @@ export function createSession(options: {
       return locked(async () => {
         const current = await store.read()
         if (current === null) throw new SignInError("Not signed in. Run omo login.")
-        if (current.refreshState === "uncertain") throw uncertain()
-        if (Date.parse(current.accessTokenExpiresAt) > Date.now() + 30_000) return current.accessToken
-        // Journal before sending: a lost response or process crash must never replay a single-use token.
-        await store.write({ ...current, refreshState: "uncertain" })
-        try {
-          const tokens = parseReply(tokenSchema, await request("/v1/session/refresh", jsonRequest({ refreshToken: current.refreshToken })))
-          await store.write({ ...current, ...tokens })
-          return tokens.accessToken
-        } catch (error) {
-          if (error instanceof ApiRefusal && error.status < 500 && ["unauthorized", "account_deleted", "reauth_required", "invalid_grant"].includes(error.code)) {
-            await store.clear()
-            throw new SignInError(error.code === "reauth_required"
-              ? "This session was ended because its refresh token was reused. Sign in again with omo login."
-              : "Sign in again with omo login.")
-          }
-          if ((error instanceof RequestFailure && error.notSent) ||
-            (error instanceof ApiRefusal && error.status === 429 && error.code === "rate_limited")) {
-            await store.write(current)
-            throw error
-          }
-          throw uncertain()
-        }
+        return refreshedAccess(current)
       })
     },
     async removeForLimit(error: unknown, choose: ChooseDevice): Promise<boolean> {

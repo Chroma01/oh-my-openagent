@@ -102,8 +102,16 @@ export async function requestApi(api: string, path: string, init: RequestInit, s
   } catch (error) {
     const cause = error instanceof Error && error.cause instanceof Error ? error.cause : error
     const code: unknown = cause instanceof Error ? Reflect.get(cause, "code") : undefined
-    throw new RequestFailure(typeof code === "string" &&
-      ["ENOTFOUND", "ECONNREFUSED", "ENETUNREACH", "EHOSTUNREACH", "EAI_AGAIN", "ConnectionRefused"].includes(code))
+    // Certificate checks and explicitly connect/handshake-phase failures precede HTTP.
+    // Generic resets and timeouts do not prove which phase failed.
+    throw new RequestFailure(typeof code === "string" && [
+      "ENOTFOUND", "ECONNREFUSED", "ENETUNREACH", "EHOSTUNREACH", "EAI_AGAIN", "ConnectionRefused",
+      "EADDRNOTAVAIL", "ENETDOWN", "EHOSTDOWN", "UND_ERR_CONNECT_TIMEOUT", "ERR_TLS_HANDSHAKE_TIMEOUT",
+      "DEPTH_ZERO_SELF_SIGNED_CERT", "CERT_HAS_EXPIRED", "ERR_TLS_CERT_ALTNAME_INVALID",
+      "UNABLE_TO_VERIFY_LEAF_SIGNATURE", "SELF_SIGNED_CERT_IN_CHAIN", "CERT_NOT_YET_VALID",
+      "UNABLE_TO_GET_ISSUER_CERT", "UNABLE_TO_GET_ISSUER_CERT_LOCALLY", "CERT_SIGNATURE_FAILURE",
+      "CERT_UNTRUSTED", "CERT_REJECTED",
+    ].includes(code))
   }
   if (response.status === 204) return null
   try { body = await response.json() } catch { throw new RequestFailure(false) }
