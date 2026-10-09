@@ -4,7 +4,7 @@ A refresh refusal during logout suppresses the unconfirmed-revocation warning on
 
 ## 2026-10-09 - Finish logout after refresh refusal or interruption (#9833)
 
-Logout uses the normal journal-before-send refresh path. An explicit terminal refresh refusal means the session is already ended: local credentials are cleared without a revoke request or an unconfirmed-revocation warning. Other refresh failures and a previously uncertain record clear the complete local item, exit successfully, and warn that server revocation was not confirmed. An uncertain record is cleared without another network attempt.
+Logout uses the normal journal-before-send refresh path. An explicit terminal refresh refusal means the session is already ended: local credentials are cleared without a revoke request, and the unconfirmed-revocation warning is shown unless the refusal is `account_deleted` or `reauth_required` (see the entry above). Other refresh failures and a previously uncertain record clear the complete local item, exit successfully, and warn that server revocation was not confirmed. An uncertain record is cleared without another network attempt.
 
 A real-child crash regression kills the owned logout process while its journaled refresh response is held, then proves fresh logout clears without replay and fresh whoami reports signed out.
 
