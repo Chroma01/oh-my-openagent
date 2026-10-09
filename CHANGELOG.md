@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+**omo runs on senpi 2026.10.10-11.** `tool_schema("eval:environments")` now documents `packages.install` and its `environment_install_timeout`, so JavaScript and Python cells can discover how to install packages without changing the default eval description or parameters. Julia, Ruby and Python per-cell overhead is back to the pre-regression base. Full engine notes: [senpi 2026.10.10-11](https://github.com/code-yeongyu/senpi/releases/tag/v2026.10.10-11).
+
 ## [5.1.28] - 2026-10-09
 
 **omo runs on senpi 2026.10.10-10.** With several Anthropic Subscription accounts, a session no longer switches accounts on a transient error and back on the next turn; it retries the same account, then stays on whichever account holds its transcript. With `resumeMode: "off"`, the conversation is no longer written to the prompt cache again on every turn. A long streamed tool call on the Anthropic Subscription lane no longer fails with "session stream queue exceeded 256 messages". Full engine notes: [senpi 2026.10.10-10](https://github.com/code-yeongyu/senpi/releases/tag/v2026.10.10-10). ([senpi#2891](https://github.com/code-yeongyu/senpi/issues/2891), [senpi#2982](https://github.com/code-yeongyu/senpi/issues/2982), [senpi#2822](https://github.com/code-yeongyu/senpi/issues/2822), [#9798](https://github.com/code-yeongyu/oh-my-openagent/pull/9798))
