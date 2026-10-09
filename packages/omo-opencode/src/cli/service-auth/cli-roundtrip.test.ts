@@ -20,6 +20,7 @@ test("real omo launcher signs in, reports status, and logs out without disk or o
       ...minted, intervalSeconds: 1, expiresAt: new Date(Date.now() + 60_000).toISOString(),
     })
     if (path === "/v1/device/token") return Response.json(grant)
+    if (path === "/v1/devices/device-1" && request.method === "DELETE") return new Response(null, { status: 204 })
     return new Response(null, { status: 404 })
   })
   const root = resolve(import.meta.dir, "../../../../..")

@@ -1,3 +1,7 @@
+## 2026-10-09 - Harden native service sign-in recovery (#9831)
+
+The regenerated authentication bundle retains offline credentials, prevents replay of refresh tokens with unknown outcomes, sanitizes terminal output, backs off device polling on rate limits, and attempts server-side device revocation on logout while always clearing local credentials.
+
 ## 2026-10-09 - Route CLI service sign-in before launching the engine (#9829)
 
 The npm launcher and compiled entry now handle `omo login`, `omo logout`, and `omo whoami` as standalone service commands. They share the toolkit's PKCE/device flows and OS-only credential storage. The npm payload includes a generated command bundle, checked against source before shipping; a runtime without Bun.secrets reports the requirement instead of saving credentials to disk.

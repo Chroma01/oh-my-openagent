@@ -7,6 +7,7 @@ import { createCredentialStore } from "./keystore"
 import { BrowserUnavailable, loginLoopback } from "./loopback"
 import { type ChooseDevice, serviceOrigin, SignInError } from "./protocol"
 import { createSession } from "./session"
+import { terminalText } from "./terminal-text"
 
 type Options = { readonly api?: string; readonly accounts?: string; readonly device?: boolean; readonly browser?: boolean }
 
@@ -18,7 +19,7 @@ const chooseDevice: ChooseDevice = async devices => {
   const chosen = await select({
     message: "Device limit reached. Remove a device to sign in?",
     options: [{ value: "", label: "Cancel (keep all devices)" }, ...devices.map(device => ({
-      value: device.id, label: device.name.replace(/[\p{C}\p{Zl}\p{Zp}]/gu, ""),
+      value: device.id, label: terminalText(device.name),
     }))],
   })
   if (isCancel(chosen) || chosen === "") return null
@@ -36,14 +37,15 @@ async function run(action: "login" | "logout" | "whoami", options: Options): Pro
     const store = createCredentialStore(api)
     const session = createSession({ api, store, signal: controller.signal })
     if (action === "logout") {
-      await session.logout()
+      const revoked = await session.logout()
       console.log("Signed out of OmO. Stored credentials and device keys were removed.")
+      if (!revoked) console.error("Server device revocation could not be confirmed. Remove the device from your account when connected.")
       return
     }
     if (action === "whoami") {
       await session.accessToken()
       const saved = await store.read()
-      console.log(saved ? `Signed in to ${api} as ${saved.device.name.replace(/[\p{C}\p{Zl}\p{Zp}]/gu, "")}.` : "Not signed in.")
+      console.log(saved ? `Signed in to ${api} as ${terminalText(saved.device.name)}.` : "Not signed in.")
       return
     }
     const name = deviceName()

@@ -14,3 +14,15 @@ const remove = async () => {
   return true
 }
 Object.defineProperty(Bun, "secrets", { value: { get, set, delete: remove } })
+
+if (process.env.OMO_TEST_FETCH_FAILURE === "offline") {
+  const original = globalThis.fetch
+  const failing: typeof fetch = Object.assign(async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
+    const url = input instanceof Request ? input.url : String(input)
+    if (url.endsWith("/v1/session/refresh")) {
+      throw Object.assign(new Error(await get() ?? "offline"), { code: "ECONNREFUSED" })
+    }
+    return original(input, init)
+  }, { preconnect: original.preconnect })
+  globalThis.fetch = failing
+}

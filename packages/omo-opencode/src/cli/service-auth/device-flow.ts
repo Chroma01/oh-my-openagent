@@ -39,7 +39,10 @@ export async function loginDevice(session: Session, options: {
       if (!(error instanceof ApiRefusal)) throw error
       if (error.status === 400 && error.code === "authorization_pending") continue
       if (error.status === 400 && error.code === "slow_down") { interval += 5000; continue }
-      if (error.status === 401 && error.code === "reauth_required") continue
+      if (error.status === 429) {
+        interval = error.retryDelay(now(), Math.min(60_000, interval + 5000))
+        continue
+      }
       if (error.detail !== undefined) {
         if (await session.removeForLimit(error, options.chooseDevice)) continue
         throw new SignInError("Sign-in cancelled. No device was removed.")

@@ -1,3 +1,11 @@
+## 2026-10-09 - Preserve offline sign-in and prevent uncertain refresh replay (#9831)
+
+Refresh now journals an in-flight rotation in the OS credential record before sending it. Proven connection failures preserve a retryable sign-in. A timeout, lost response, 5xx, invalid reply, or failed rotated-token save retains credentials and device keys but requires a new sign-in instead of resending the possibly consumed refresh token. Reuse has no grace period and can revoke the device, so a later process also honors the journal. Only explicit terminal refusals clear the stored sign-in.
+
+Loopback state comparisons are constant-time. Device polling follows RFC 8628 without the off-contract 401 continuation, strips terminal controls from displayed server strings, and handles 429 with bounded Retry-After backoff until expiry. Logout attempts access-authenticated device revocation and always clears locally, warning when server revocation could not be confirmed. Error objects no longer serialize management credentials or arbitrary server error codes.
+
+Regression coverage includes actual listener binding, ephemeral ports, callback reuse, HTTPS guards, per-failure refresh outcomes, native CLI error output, terminal injection, and offline logout. The native authentication bundle is regenerated from the same source.
+
 ## 2026-10-09 - CLI sign-in with OS credential storage (#9829, #9811)
 
 `omo login` supports browser loopback PKCE and headless device authorization (`--device` or `--no-browser`), production origins by default, and explicit API/accounts overrides. Device sign-in shows the verification URI, user code, and matching code, observes the server's expiry and polling interval, and backs off on `slow_down`. At the device limit, interactive users can choose and confirm one device to revoke before retrying; declining changes nothing.

@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from "node:crypto"
+import { createHash, randomBytes, timingSafeEqual } from "node:crypto"
 import { createServer } from "node:http"
 import { generateDeviceKeys } from "./device-keys"
 import { type ChooseDevice, grantSchema, jsonRequest, parseReply, type Platform, serviceOrigin, SignInError } from "./protocol"
@@ -28,7 +28,10 @@ async function authorize(options: {
       return
     }
     const code = url.searchParams.get("code")
-    if (accepted || url.searchParams.getAll("state").length !== 1 || url.searchParams.get("state") !== state ||
+    const suppliedState = Buffer.from(url.searchParams.get("state") ?? "")
+    const expectedState = Buffer.from(state)
+    if (accepted || url.searchParams.getAll("state").length !== 1 ||
+      suppliedState.length !== expectedState.length || !timingSafeEqual(suppliedState, expectedState) ||
       url.searchParams.getAll("code").length !== 1 || !code) {
       response.writeHead(400).end("Invalid sign-in response")
       return

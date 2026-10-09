@@ -7,7 +7,7 @@ describe("device authorization", () => {
   test("prints server URI and both codes, backs off pending/slow_down, and persists approval", async () => {
     const time = clock()
     const secrets = memorySecrets()
-    const outcomes = ["authorization_pending", "slow_down", "reauth_required", "approved"]
+    const outcomes = ["authorization_pending", "slow_down", "approved"]
     const seen: unknown[] = []
     const api = fakeApi(async request => {
       const body = await request.json()
@@ -19,18 +19,18 @@ describe("device authorization", () => {
       expect(body).not.toHaveProperty("userCode")
       expect(body.deviceCode).toBe(minted.deviceCode)
       const outcome = outcomes.shift()
-      return outcome === "approved" ? Response.json(grant) : refusal(outcome ?? "invalid_grant", undefined, outcome === "reauth_required" ? 401 : 400)
+      return outcome === "approved" ? Response.json(grant) : refusal(outcome ?? "invalid_grant")
     })
     const shown: unknown[] = []
     await loginDevice(createSession({ api, store: secrets.store(api), home: await temporaryHome() }), {
       name: "Test CLI", platform: "linux", ...time,
       show: value => { shown.push(value) }, chooseDevice: async () => null,
     })
-    expect(time.delays).toEqual([5000, 5000, 10000, 10000])
+    expect(time.delays).toEqual([5000, 5000, 10000])
     expect(shown).toEqual([{ verificationUri: minted.verificationUri, userCode: minted.userCode, matchingCode: minted.matchingCode }])
     expect(JSON.stringify(shown)).not.toContain(minted.deviceCode)
     expect((await secrets.store(api).read())?.accessToken).toBe(grant.accessToken)
-    expect(seen).toHaveLength(5)
+    expect(seen).toHaveLength(4)
   })
 
   for (const code of ["access_denied", "expired_token", "invalid_grant"]) {

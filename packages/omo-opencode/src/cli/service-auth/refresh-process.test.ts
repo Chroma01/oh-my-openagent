@@ -3,16 +3,16 @@ import { withLock } from "@oh-my-opencode/team-core/team-state-store/locks"
 import { mkdir, readdir, readFile, stat } from "node:fs/promises"
 import { join } from "node:path"
 import { credentialId } from "./keystore"
-import { credentialSchema } from "./protocol"
+import { credentialSchema, type Credentials } from "./protocol"
 import { fakeApi, grant, privateKeys, temporaryHome } from "./test-support"
 
 test("two processes share the refresh lock and never persist credentials in HOME or child arguments", async () => {
   const home = await temporaryHome()
-  let saved = { ...grant, ...privateKeys, accessTokenExpiresAt: "2000-01-01T00:00:00Z" }
+  let saved: Credentials = { ...grant, ...privateKeys, accessTokenExpiresAt: "2000-01-01T00:00:00Z" }
   let rotations = 0
   const api = fakeApi(async request => {
     if (request.url.endsWith("/fake-store")) {
-      if (request.method === "PUT") saved = { ...saved, ...credentialSchema.parse(await request.json()) }
+      if (request.method === "PUT") saved = credentialSchema.parse(await request.json())
       return Response.json(saved)
     }
     rotations++

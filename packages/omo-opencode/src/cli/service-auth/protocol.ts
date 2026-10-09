@@ -1,7 +1,15 @@
 import { z } from "zod"
+import { terminalText } from "./terminal-text"
 
 export class SignInError extends Error {
   override readonly name = "SignInError"
+  constructor(message: string, readonly retryable = false) { super(message) }
+}
+
+export class RequestFailure extends SignInError {
+  constructor(readonly notSent: boolean) {
+    super("Unable to complete the service request. Check the connection and retry.", true)
+  }
 }
 
 export const platformSchema = z.enum(["macos", "linux", "windows"])
@@ -17,13 +25,14 @@ export const grantSchema = tokenSchema.extend({
 })
 export const credentialSchema = grantSchema.extend({
   signingPrivateKey: nonempty, sealingPrivateKey: nonempty,
+  refreshState: z.literal("uncertain").optional(),
 })
 export type Credentials = z.infer<typeof credentialSchema>
 export const deviceCodeSchema = z.object({
   deviceCode: z.string().regex(/^dc\.[A-Za-z0-9_-]{43}$/),
   userCode: z.string().regex(/^[BCDFGHJKLMNPQRSTVWXZ]{4}-[BCDFGHJKLMNPQRSTVWXZ]{4}$/),
   matchingCode: z.string().regex(/^\d{3} \d{3}$/),
-  verificationUri: z.string().url(),
+  verificationUri: z.string().transform(terminalText).pipe(z.string().url()),
   expiresAt: timestamp,
   intervalSeconds: z.number().int().min(1).max(60),
 })
@@ -44,9 +53,25 @@ export type ListedDevice = z.infer<typeof deviceListSchema>["devices"][number]
 export type ChooseDevice = (devices: readonly ListedDevice[]) => Promise<string | null>
 
 export class ApiRefusal extends SignInError {
-  constructor(readonly code: string, readonly status: number, readonly detail?: z.infer<typeof limitSchema>) {
+  readonly code: string
+  readonly #detail: z.infer<typeof limitSchema> | undefined
+  readonly #retryAfter: string | null
+  constructor(code: string, readonly status: number, detail?: z.infer<typeof limitSchema>, retryAfter: string | null = null) {
     // Server messages and unknown codes can contain credentials; never echo either.
-    super("The service refused this request. Sign in again or check your account.")
+    super("The service refused this request. Sign in again or check your account.", status === 429 || status >= 500)
+    this.code = [
+      "unauthorized", "account_deleted", "reauth_required", "invalid_grant", "entitlement_required",
+      "authorization_pending", "slow_down", "access_denied", "expired_token", "rate_limited",
+      "internal", "unavailable", "forbidden", "invalid_request", "not_found",
+    ].includes(code) ? code : "unknown"
+    this.#detail = detail
+    this.#retryAfter = retryAfter
+  }
+  get detail() { return this.#detail }
+  retryDelay(now: number, fallback: number): number {
+    const raw = this.#retryAfter
+    const delay = raw === null ? Number.NaN : /^\d+$/.test(raw) ? Number(raw) * 1000 : Date.parse(raw) - now
+    return Math.min(60_000, Math.max(fallback, Number.isFinite(delay) ? delay : fallback))
   }
 }
 
@@ -74,18 +99,21 @@ export async function requestApi(api: string, path: string, init: RequestInit, s
       ...init, redirect: "error",
       signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(30_000),
     })
-    if (response.status === 204) return null
-    body = await response.json()
-  } catch {
-    throw new SignInError("Unable to complete the service request. Check the connection and sign in again.")
+  } catch (error) {
+    const cause = error instanceof Error && error.cause instanceof Error ? error.cause : error
+    const code: unknown = cause instanceof Error ? Reflect.get(cause, "code") : undefined
+    throw new RequestFailure(typeof code === "string" &&
+      ["ENOTFOUND", "ECONNREFUSED", "ENETUNREACH", "EHOSTUNREACH", "EAI_AGAIN", "ConnectionRefused"].includes(code))
   }
+  if (response.status === 204) return null
+  try { body = await response.json() } catch { throw new RequestFailure(false) }
   if (response.ok) return body
   const envelope = envelopeSchema.safeParse(body)
   if (!envelope.success) throw new SignInError("The service returned an invalid error response.")
   const error = envelope.data.error
   const detail = limitSchema.safeParse(error.detail)
   throw new ApiRefusal(error.code, response.status,
-    error.code === "entitlement_required" && detail.success ? detail.data : undefined)
+    error.code === "entitlement_required" && detail.success ? detail.data : undefined, response.headers.get("retry-after"))
 }
 
 export const jsonRequest = (body: unknown): RequestInit => ({

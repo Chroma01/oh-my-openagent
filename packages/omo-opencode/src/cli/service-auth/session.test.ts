@@ -53,7 +53,7 @@ describe("credential lifecycle", () => {
 
   test("logout clears tokens and private keys", async () => {
     const secrets = memorySecrets()
-    const api = "https://api.omo.dev"
+    const api = fakeApi(() => new Response(null, { status: 204 }))
     const store = secrets.store(api)
     await store.write({ ...grant, ...privateKeys })
     await createSession({ api, store, home: await temporaryHome() }).logout()
@@ -70,5 +70,6 @@ describe("credential lifecycle", () => {
       store: { ...store, write: async () => { throw new Error("store unavailable") } },
     })
     await expect(session.accessToken()).rejects.toThrow()
+    expect(await store.read()).toEqual({ ...grant, ...privateKeys, accessTokenExpiresAt: "2000-01-01T00:00:00Z" })
   })
 })
