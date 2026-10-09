@@ -41,7 +41,7 @@ async function run(action: "login" | "logout" | "whoami", options: Options): Pro
     if (action === "logout") {
       const revoked = await session.logout()
       console.log("Signed out of OmO. Stored credentials and device keys were removed.")
-      if (!revoked) console.error("Server device revocation could not be confirmed. Remove the device from your account when connected.")
+      if (!revoked) console.error("Server device revocation could not be confirmed. Remove this device from the Devices page of your OmO account when connected.")
       return
     }
     if (action === "whoami") {

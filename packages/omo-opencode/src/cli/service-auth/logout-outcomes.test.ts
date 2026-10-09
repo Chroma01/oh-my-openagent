@@ -135,8 +135,9 @@ for (const outcome of ["500", "500-terminal", "lost-response", "timeout", "netwo
     expect(h.readStored()).toBeNull()
     expect(h.calls).toEqual(outcome === "network" || outcome === "tls" ? [] : ["POST /v1/session/refresh"])
     expect(tlsRequests).toBe(0)
-    if (terminal) expect(result.stderr).toBe("")
-    else expect(result.stderr.length).toBeGreaterThan(0)
+    const deviceRevokedByServer = outcome === "account_deleted" || outcome === "reauth_required"
+    if (deviceRevokedByServer) expect(result.stderr).toBe("")
+    else expect(result.stderr).toContain("could not be confirmed")
     const after = await h.launch("whoami").result
     expect(after.code).toBe(1)
     expect(after.stderr).toContain("Not signed in")

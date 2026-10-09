@@ -8,7 +8,13 @@ import {
   parseReply, requestApi, RequestFailure, serviceOrigin, SignInError, tokenSchema,
 } from "./protocol"
 
-class SessionEnded extends SignInError {}
+class SessionEnded extends SignInError {
+  constructor(message: string, readonly deviceRevoked: boolean) { super(message) }
+}
+
+// The service revokes the device row before answering reauth_required on refresh (token reuse);
+// account_deleted removes the account. unauthorized and invalid_grant leave the device's slot held.
+const DEVICE_REVOKING_REFUSALS = new Set(["account_deleted", "reauth_required"])
 
 export function createSession(options: {
   readonly api: string
@@ -45,7 +51,7 @@ export function createSession(options: {
         await store.clear()
         throw new SessionEnded(error.code === "reauth_required"
           ? "This session was ended because its refresh token was reused. Sign in again with omo login."
-          : "Sign in again with omo login.")
+          : "Sign in again with omo login.", DEVICE_REVOKING_REFUSALS.has(error.code))
       }
       if ((error instanceof RequestFailure && error.notSent) ||
         (error instanceof ApiRefusal && error.status === 429 && error.code === "rate_limited")) {
@@ -74,7 +80,7 @@ export function createSession(options: {
           }
           return true
         } catch (error) {
-          if (error instanceof SessionEnded) return true
+          if (error instanceof SessionEnded) return error.deviceRevoked
           if (error instanceof SignInError) return false
           throw error
         } finally { await store.clear() }
