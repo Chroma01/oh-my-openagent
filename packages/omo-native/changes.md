@@ -1,6 +1,6 @@
 ## 2026-10-09 - Settle native logout refresh failures and crash recovery (#9833)
 
-The regenerated auth bundle distinguishes already-ended refresh refusals from unconfirmed outcomes. Both clear locally and exit successfully; only unconfirmed outcomes warn. Crash recovery never replays a refresh token marked uncertain.
+The regenerated auth bundle distinguishes refresh refusals from unconfirmed outcomes. Both clear locally and exit successfully. The unconfirmed-revocation warning is skipped only for `account_deleted` and `reauth_required`, where the service has already revoked the device; `unauthorized`, `invalid_grant` and every unconfirmed outcome warn. Crash recovery never replays a refresh token marked uncertain.
 
 ## 2026-10-09 - Recover native sign-in after TLS and opener failures (#9831 follow-up)
 
