@@ -1,3 +1,7 @@
+## 2026-10-09 - Route CLI service sign-in before launching the engine (#9829)
+
+The npm launcher and compiled entry now handle `omo login`, `omo logout`, and `omo whoami` as standalone service commands. They share the toolkit's PKCE/device flows and OS-only credential storage. The npm payload includes a generated command bundle, checked against source before shipping; a runtime without Bun.secrets reports the requirement instead of saving credentials to disk.
+
 ## 2026-10-04 - Every bun is held to the engine's 1.4 floor; a too-old bun you chose says so at startup (#9563)
 
 The engine needs bun 1.4 (`node:sqlite`, and the `worker_threads` compatibility the JS eval kernel uses), and `BUN_MIN_VERSION` said so, but `bin/lib/bun-runtime.js` applied the floor only to a bun it discovered on an npm install. A `bun add -g` install re-exec'd under its bun with no probe, and the POSIX bun-global shim runs bun directly, where "already on bun" stayed put whatever the version. So on bun 1.3.x, `/computer on` failed with `ResolveMessage: No such built-in module: node:sqlite`, the first of several things that could not work there.
