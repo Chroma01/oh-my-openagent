@@ -87,6 +87,7 @@ for (const outcome of ["approved", "offline", "refused"]) {
     const calls: string[] = []
     const api = fakeApi(request => {
       calls.push(`${request.method} ${new URL(request.url).pathname}`)
+      if (request.url.endsWith("/v1/session/refresh")) return Response.json({ ...grant, refreshToken: "rotated" })
       expect(request.headers.get("authorization")).toBe(`Bearer ${grant.accessToken}`)
       return outcome === "refused" ? refusal("unauthorized", undefined, 401) : new Response(null, { status: 204 })
     })
@@ -103,6 +104,6 @@ for (const outcome of ["approved", "offline", "refused"]) {
     const result = await createSession({ api, store, home: await temporaryHome() }).logout()
     expect(await store.read()).toBeNull()
     expect(result).toBe(outcome === "approved")
-    expect(outcome === "offline" ? attempts : calls).toEqual(outcome === "offline" ? 1 : ["DELETE /v1/devices/device-1"])
+    expect(outcome === "offline" ? attempts : calls).toEqual(outcome === "offline" ? 1 : ["POST /v1/session/refresh", "DELETE /v1/devices/device-1"])
   })
 }

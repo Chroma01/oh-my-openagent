@@ -5,11 +5,15 @@ import { deviceName, devicePlatform } from "./device-name"
 import { loginDevice } from "./device-flow"
 import { createCredentialStore } from "./keystore"
 import { BrowserUnavailable, loginLoopback } from "./loopback"
-import { type ChooseDevice, serviceOrigin, SignInError } from "./protocol"
+import { type ChooseDevice, type ListedDevice, serviceOrigin, SignInError } from "./protocol"
 import { createSession } from "./session"
 import { terminalText } from "./terminal-text"
 
 type Options = { readonly api?: string; readonly accounts?: string; readonly device?: boolean; readonly browser?: boolean }
+
+export function deviceChoices(devices: readonly ListedDevice[]) {
+  return devices.map(device => ({ value: device.id, label: terminalText(device.name) }))
+}
 
 const chooseDevice: ChooseDevice = async devices => {
   if (!process.stdin.isTTY || devices.length === 0) {
@@ -18,9 +22,7 @@ const chooseDevice: ChooseDevice = async devices => {
   }
   const chosen = await select({
     message: "Device limit reached. Remove a device to sign in?",
-    options: [{ value: "", label: "Cancel (keep all devices)" }, ...devices.map(device => ({
-      value: device.id, label: terminalText(device.name),
-    }))],
+    options: [{ value: "", label: "Cancel (keep all devices)" }, ...deviceChoices(devices)],
   })
   if (isCancel(chosen) || chosen === "") return null
   const agreed = await confirm({ message: "Sign out the selected device?", initialValue: false })

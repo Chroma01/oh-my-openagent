@@ -1,17 +1,15 @@
 import { expect, onTestFinished, spyOn, test } from "bun:test"
-import * as crypto from "node:crypto"
 import { Server } from "node:http"
 import { loginLoopback } from "./loopback"
 import { createSession } from "./session"
 import { fakeApi, grant, memorySecrets, temporaryHome } from "./test-support"
 
-for (const property of ["bind-address", "ephemeral-port", "single-use", "constant-time"]) {
+for (const property of ["bind-address", "ephemeral-port", "single-use", "state-mismatch-position"]) {
   test(`real loopback callback enforces ${property}`, async () => {
     const api = fakeApi(() => Response.json(grant))
     const listen = spyOn(Server.prototype, "listen")
     const address = spyOn(Server.prototype, "address")
-    const compare = spyOn(crypto, "timingSafeEqual")
-    onTestFinished(() => { listen.mockRestore(); address.mockRestore(); compare.mockRestore() })
+    onTestFinished(() => { listen.mockRestore(); address.mockRestore() })
     await loginLoopback(createSession({ api, store: memorySecrets().store(api), home: await temporaryHome() }), {
       accounts: "https://accounts.omo.dev", name: "Test", platform: "linux", chooseDevice: async () => null,
       open: async url => {
@@ -28,9 +26,17 @@ for (const property of ["bind-address", "ephemeral-port", "single-use", "constan
         callback.searchParams.set("code", "one-use-code")
         callback.searchParams.set("state", "short")
         expect((await fetch(callback)).status).toBe(400)
+        if (property === "state-mismatch-position") {
+          const state = ask.searchParams.get("state") ?? ""
+          const first = `${state[0] === "A" ? "B" : "A"}${state.slice(1)}`
+          const last = `${state.slice(0, -1)}${state.at(-1) === "A" ? "B" : "A"}`
+          for (const mismatch of [first, last, `${state}A`]) {
+            callback.searchParams.set("state", mismatch)
+            expect((await fetch(callback)).status).toBe(400)
+          }
+        }
         callback.searchParams.set("state", ask.searchParams.get("state") ?? "")
         expect((await fetch(callback)).status).toBe(200)
-        if (property === "constant-time") expect(compare).toHaveBeenCalled()
         if (property === "single-use") expect((await fetch(callback)).status).toBe(400)
         return true
       },

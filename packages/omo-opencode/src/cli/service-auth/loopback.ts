@@ -58,11 +58,14 @@ async function authorize(options: {
     options.signal?.addEventListener("abort", abort, { once: true })
     try {
       options.signal?.throwIfAborted()
+      const openerFailed = () => {
+        if (!accepted) throw new BrowserUnavailable("No browser is available; use device sign-in.")
+      }
       const [code] = await Promise.all([
         answer.promise,
         options.open(url.href).then(opened => {
-          if (!opened) throw new BrowserUnavailable("No browser is available; use device sign-in.")
-        }),
+          if (!opened) openerFailed()
+        }, openerFailed),
       ])
       return { code, codeVerifier: verifier }
     } finally {

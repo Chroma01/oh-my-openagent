@@ -1,3 +1,11 @@
+## 2026-10-09 - Recover sign-in safely after TLS and browser-launch failures (#9831 follow-up)
+
+Certificate verification failures and explicitly identified connection/handshake failures now preserve a retryable sign-in, since no HTTP credentials were sent. Generic resets and timeouts remain fenced when the send outcome is unknown. Logout refreshes an expired access token only for a non-uncertain record, persists the rotation before revoking the device, and still clears locally on every exit.
+
+A valid loopback callback is no longer discarded when the browser opener subsequently fails. Chooser labels use a directly tested sanitizer mapping. Regression coverage includes real local self-signed TLS, both terminal-refusal message arms, refresh 429 recovery, C1 terminal controls, and deterministic first/last-byte and length-mismatch callback rejection.
+
+If the OS credential store cannot restore a record after a proven not-sent failure, the durable safety marker remains: the client cannot safely tell another process to replay the token without persisting that knowledge. No disk fallback or process-local bypass was added.
+
 ## 2026-10-09 - Preserve offline sign-in and prevent uncertain refresh replay (#9831)
 
 Refresh now journals an in-flight rotation in the OS credential record before sending it. Proven connection failures preserve a retryable sign-in. A timeout, lost response, 5xx, invalid reply, or failed rotated-token save retains credentials and device keys but requires a new sign-in instead of resending the possibly consumed refresh token. Reuse has no grace period and can revoke the device, so a later process also honors the journal. Only explicit terminal refusals clear the stored sign-in.
