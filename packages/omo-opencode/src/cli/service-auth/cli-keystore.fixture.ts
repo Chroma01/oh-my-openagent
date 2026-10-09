@@ -15,11 +15,18 @@ const remove = async () => {
 }
 Object.defineProperty(Bun, "secrets", { value: { get, set, delete: remove } })
 
-if (process.env.OMO_TEST_FETCH_FAILURE === "offline") {
+const failure = process.env.OMO_TEST_FETCH_FAILURE
+if (failure === "offline" || failure === "lost-response" || failure === "timeout") {
   const original = globalThis.fetch
   const failing: typeof fetch = Object.assign(async (input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]) => {
     const url = input instanceof Request ? input.url : String(input)
     if (url.endsWith("/v1/session/refresh")) {
+      if (failure !== "offline") {
+        const response = await original(input, init)
+        await response.arrayBuffer()
+        if (failure === "timeout") throw new DOMException("synthetic timeout after send", "TimeoutError")
+        throw Object.assign(new Error("synthetic response loss"), { code: "ECONNRESET" })
+      }
       throw Object.assign(new Error(await get() ?? "offline"), { code: "ECONNREFUSED" })
     }
     return original(input, init)

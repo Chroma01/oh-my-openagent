@@ -1,3 +1,9 @@
+## 2026-10-09 - Finish logout after refresh refusal or interruption (#9833)
+
+Logout uses the normal journal-before-send refresh path. An explicit terminal refresh refusal means the session is already ended: local credentials are cleared without a revoke request or an unconfirmed-revocation warning. Other refresh failures and a previously uncertain record clear the complete local item, exit successfully, and warn that server revocation was not confirmed. An uncertain record is cleared without another network attempt.
+
+A real-child crash regression kills the owned logout process while its journaled refresh response is held, then proves fresh logout clears without replay and fresh whoami reports signed out.
+
 ## 2026-10-09 - Recover sign-in safely after TLS and browser-launch failures (#9831 follow-up)
 
 Certificate verification failures and explicitly identified connection/handshake failures now preserve a retryable sign-in, since no HTTP credentials were sent. Generic resets and timeouts remain fenced when the send outcome is unknown. Logout refreshes an expired access token only for a non-uncertain record, persists the rotation before revoking the device, and still clears locally on every exit.

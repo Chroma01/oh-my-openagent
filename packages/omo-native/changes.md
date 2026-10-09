@@ -1,3 +1,7 @@
+## 2026-10-09 - Settle native logout refresh failures and crash recovery (#9833)
+
+The regenerated auth bundle distinguishes already-ended refresh refusals from unconfirmed outcomes. Both clear locally and exit successfully; only unconfirmed outcomes warn. Crash recovery never replays a refresh token marked uncertain.
+
 ## 2026-10-09 - Recover native sign-in after TLS and opener failures (#9831 follow-up)
 
 The refreshed authentication bundle treats certificate and proven connection failures as retryable, refreshes safe expired credentials before logout revocation, and preserves an accepted callback despite browser-opener failure. Secret-output and chooser/C1-control regression tests cover the native command surface.

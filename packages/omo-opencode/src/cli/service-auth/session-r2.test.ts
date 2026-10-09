@@ -112,13 +112,13 @@ for (const outcome of ["approved", "refresh-refused", "revoke-refused", "save-fa
       if (outcome === "save-failed" && value.refreshToken === "new-refresh") throw new SignInError("OS store unavailable")
       await base.write(value)
     } }
-    expect(await createSession({ api, store, home: await temporaryHome() }).logout()).toBe(outcome === "approved" || outcome === "uncertain")
+    expect(await createSession({ api, store, home: await temporaryHome() }).logout()).toBe(outcome === "approved" || outcome === "refresh-refused")
     expect(await base.read()).toBeNull()
-    expect(calls).toEqual(outcome === "uncertain" ? ["DELETE /v1/devices/device-1"]
+    expect(calls).toEqual(outcome === "uncertain" ? []
       : ["POST /v1/session/refresh", ...(["refresh-refused", "save-failed"].includes(outcome) ? [] : ["DELETE /v1/devices/device-1"])])
-    if (outcome === "approved" || outcome === "revoke-refused" || outcome === "uncertain") {
-      expect(bearers).toEqual([`Bearer ${outcome === "uncertain" ? grant.accessToken : "new-access"}`])
-      expect(savedRefreshAtRevoke).toBe(outcome === "uncertain" ? grant.refreshToken : "new-refresh")
+    if (outcome === "approved" || outcome === "revoke-refused") {
+      expect(bearers).toEqual(["Bearer new-access"])
+      expect(savedRefreshAtRevoke).toBe("new-refresh")
     } else expect(bearers).toEqual([])
   })
 }

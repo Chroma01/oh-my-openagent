@@ -8,6 +8,8 @@ import {
   parseReply, requestApi, RequestFailure, serviceOrigin, SignInError, tokenSchema,
 } from "./protocol"
 
+class SessionEnded extends SignInError {}
+
 export function createSession(options: {
   readonly api: string
   readonly store: CredentialStore
@@ -41,7 +43,7 @@ export function createSession(options: {
     } catch (error) {
       if (error instanceof ApiRefusal && error.status < 500 && ["unauthorized", "account_deleted", "reauth_required", "invalid_grant"].includes(error.code)) {
         await store.clear()
-        throw new SignInError(error.code === "reauth_required"
+        throw new SessionEnded(error.code === "reauth_required"
           ? "This session was ended because its refresh token was reused. Sign in again with omo login."
           : "Sign in again with omo login.")
       }
@@ -63,7 +65,8 @@ export function createSession(options: {
         try {
           const current = await store.read()
           if (current !== null) {
-            const access = current.refreshState !== "uncertain" && Date.parse(current.accessTokenExpiresAt) <= Date.now()
+            if (current.refreshState === "uncertain") return false
+            const access = Date.parse(current.accessTokenExpiresAt) <= Date.now()
               ? await refreshedAccess(current) : current.accessToken
             await request(`/v1/devices/${encodeURIComponent(current.device.id)}`, {
               method: "DELETE", headers: { authorization: `Bearer ${access}` },
@@ -71,6 +74,7 @@ export function createSession(options: {
           }
           return true
         } catch (error) {
+          if (error instanceof SessionEnded) return true
           if (error instanceof SignInError) return false
           throw error
         } finally { await store.clear() }
