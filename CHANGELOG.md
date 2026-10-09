@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-**omo runs on senpi 2026.10.10-11.** `tool_schema("eval:environments")` now documents `packages.install` and its `environment_install_timeout`, so JavaScript and Python cells can discover how to install packages without changing the default eval description or parameters. Julia, Ruby and Python per-cell overhead is back to the pre-regression base. Full engine notes: [senpi 2026.10.10-11](https://github.com/code-yeongyu/senpi/releases/tag/v2026.10.10-11).
+**omo runs on senpi 2026.10.10-11.** `tool_schema("eval:environments")` now documents `packages.install` and its `environment_install_timeout`, so JavaScript and Python cells can discover how to install packages without changing the default eval description or parameters. Julia, Ruby and Python cells do less fixed work per cell: no globals walk below the memory thresholds, no awaited cwd stat, and leaner Python queue and capture bookkeeping. Full engine notes: [senpi 2026.10.10-11](https://github.com/code-yeongyu/senpi/releases/tag/v2026.10.10-11). (code-yeongyu/senpi#3003, code-yeongyu/senpi#3028, code-yeongyu/senpi#3033, code-yeongyu/senpi#3034, #9825)
 
 ## [5.1.28] - 2026-10-09
 
