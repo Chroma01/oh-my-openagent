@@ -1,26 +1,4 @@
 {
-  ".agents": [
-    "fake-llm.log$",
-    "missing-senpi-qa-entrypoint-",
-    "senpi-qa-evidence-",
-    "senpi-qa-not-git-"
-  ],
-  "ast-grep-mcp": [
-    "omo-rewrite-",
-    "omo-scan-",
-    "omo-search-",
-    "omo-sg-runner-",
-    "project$"
-  ],
-  "boulder-state": [
-    "boulder-plan-checklist-",
-    "boulder-plan-progress-",
-    "boulder-read-state-",
-    "boulder-stale-agent-",
-    "boulder-stale-broken-",
-    "boulder-stale-empty-",
-    "boulder-stale-work-"
-  ],
   "claude-code-compat-core": [
     ".opencode$",
     "UpperCase.MD$",
@@ -96,12 +74,6 @@
     "unsupported.txt$",
     "valid.jsonc$",
     "valid.md$"
-  ],
-  "isolation-core": [
-    "isolation-core-",
-    "isolation-index-",
-    "isolation-replay-",
-    "self-copy-"
   ],
   "lsp-core": [
     "checkout$",
@@ -1479,14 +1451,6 @@
     "x-auth-",
     "x-search-backtest-"
   ],
-  "openclaw-core": [
-    ".omo$",
-    "built-openclaw$",
-    "openclaw encoded dir$",
-    "openclaw-reply-listener-",
-    "openclaw-session-registry-",
-    "opencode$"
-  ],
   "script": [
     "ci-leg-guard-",
     "cli-node-isolated-",
@@ -1650,14 +1614,6 @@
     "summary.md$",
     "telemetry-capture-fakebun-",
     "telemetry-provider-test-"
-  ],
-  "senpi-desktop-engine": [
-    "omo-acquire-error-",
-    "omo-engine-acquire-",
-    "omo-stable-engine-",
-    "senpi-desktop-engine-locator-",
-    "senpi-desktop-engine-scenarios-",
-    "senpi-mcp-"
   ],
   "senpi-task": [
     "@code-yeongyu$",
@@ -1870,14 +1826,6 @@
     "telemetry-core-race-state-",
     "telemetry-core-record-",
     "telemetry-core-state-"
-  ],
-  "tmux-core": [
-    "Mobile Documents$",
-    "bin$",
-    "cmux.args$",
-    "cmux.sock$",
-    "omo tmux command ",
-    "tmux-runner-"
   ],
   "utils": [
     "content.txt$",
