@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// omo-codex-install:83c45a1c78073f1bfdb31c0a25d9fea733aa0d90e789d9e378db864df0e4a431:fcd96f611f49548cfb4f350c4f2a6db29a6e296c08b6a888e8f835ae206e9833
+// omo-codex-install:49c7ef4557fe6fa54d6cccca75c00f36e2fbcc2cb962fc1cbb12f822cee0837a:f55518f61b821b960fdfe68b8d0e6f3f2d504cdeec693507904b9bf30041e97e
 var __esm = (fn, res, err) => () => {
   if (fn)
     try {
@@ -10409,7 +10409,7 @@ function isKnownNonGitBashLauncher(path) {
 }
 function whereCommand(command) {
   try {
-    return execFileSync("where", [command], { encoding: "utf8" }).split(/\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0);
+    return execFileSync("where", [command], { encoding: "utf8", windowsHide: true }).split(/\r?\n/).map((line) => line.trim()).filter((line) => line.length > 0);
   } catch (error) {
     if (error instanceof Error)
       return [];

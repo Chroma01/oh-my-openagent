@@ -1,3 +1,9 @@
+## 2026-10-10 - Run hook commands without a console window on Windows (#7144)
+
+`executeHookCommand` now spawns every Claude-compatible hook command with `windowsHide: true`, matching the `taskkill` spawn beside it. A console-less host (an IDE- or GUI-launched `opencode serve`) used to get a fresh console per hook: a conhost flash echoing the hook JSON, or, with Windows Terminal as the default terminal, a full terminal window that took focus on every prompt and tool event. The `sg --version` probe in `ast-grep/sg-resolver.ts` and the `where bash` lookup in `runtime/git-bash.ts` had the same gap and now pass the flag too.
+
+`packages/utils/src/windows-console-hide.test.ts` walks the whole utils source tree like the #8501 gates do and fails on any `node:child_process` spawn, exec, execFile or fork call without `windowsHide: true`, unless an allowlist entry names its reason (the `runtime/spawn.ts` Node fallback, whose options helpers set the flag on win32; the gate asserts that too). The flag is inert on posix.
+
 ## 2026-10-10 - lazycodex plugin scripts no longer open console windows on Windows (#9838)
 
 Every `node:child_process` call in `packages/omo-codex/plugin/scripts/` now passes `windowsHide: true`. The worst offender was the background auto-update in `auto-update.mjs`, which ran `cmd.exe /c npm.cmd` detached from a Codex hook and so got its own console window on every update. The `auto-update-plan.mjs` version probe and manual-update runner, and the plugin build scripts, had the same gap. `plugin/test/windows-console-hide.test.mjs` walks every plugin script and fails on any spawn, exec, execFile or fork call without the flag (allowlist with a reason per entry, empty today), and refuses namespace, default or `require` imports of `child_process` that it could not audit.
