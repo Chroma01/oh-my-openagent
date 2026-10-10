@@ -2,7 +2,7 @@ import { describe, expect, test } from "bun:test"
 import { readdirSync, readFileSync } from "node:fs"
 import { join } from "node:path"
 
-import { createNodeSpawnOptions, createNodeSpawnSyncOptions } from "./runtime/spawn"
+import { createBunSpawnOptions, createNodeSpawnOptions, createNodeSpawnSyncOptions } from "./runtime/spawn"
 
 // Platform contract (#7144, same class as #8501): utils runs inside console-less hosts (an IDE- or
 // GUI-launched `opencode serve`, Codex hooks). On Windows a console-subsystem child spawned there
@@ -14,16 +14,30 @@ const ENTRY_POINTS = ["spawnSync", "spawn", "execFileSync", "execFile", "execSyn
 
 // Calls whose call text cannot carry the literal flag. Each entry names the reason; an intentionally
 // visible process would also be listed here.
-const ALLOWLIST: readonly { readonly file: string; readonly callee: string; readonly reason: string }[] = [
+const ALLOWLIST: readonly { readonly file: string; readonly callee: string; readonly via: string; readonly reason: string }[] = [
   {
     file: "runtime/spawn.ts",
     callee: "nodeSpawn",
+    via: "createNodeSpawnOptions(",
     reason: "options come from createNodeSpawnOptions, which sets windowsHide on win32 (asserted below)",
   },
   {
     file: "runtime/spawn.ts",
     callee: "nodeSpawnSync",
+    via: "createNodeSpawnSyncOptions(",
     reason: "options come from createNodeSpawnSyncOptions, which sets windowsHide on win32 (asserted below)",
+  },
+  {
+    file: "runtime/spawn.ts",
+    callee: "bun.spawn",
+    via: "createBunSpawnOptions(",
+    reason: "options come from createBunSpawnOptions, which sets windowsHide (asserted below)",
+  },
+  {
+    file: "runtime/spawn.ts",
+    callee: "bun.spawnSync",
+    via: "createBunSpawnOptions(",
+    reason: "options come from createBunSpawnOptions, which sets windowsHide (asserted below)",
   },
 ]
 
@@ -95,6 +109,17 @@ function collectCalls(file: string, source: string): readonly ChildProcessCall[]
       })
     }
   }
+  // Bun's own spawn API (#9840): `Bun.spawn*` directly, or a runtime handle named `bun`. It accepts
+  // windowsHide too, and is the path taken whenever the code runs under Bun.
+  for (const match of source.matchAll(/(?<![\w$])((?:Bun|bun)\.spawn(?:Sync)?)\(/g)) {
+    if (isCommentLine(source, match.index)) continue
+    calls.push({
+      file,
+      line: source.slice(0, match.index).split("\n").length,
+      callee: match[1] ?? "",
+      text: `${match[1]}${callText(source, match.index + match[0].length - 1)}`,
+    })
+  }
   return calls
 }
 
@@ -103,7 +128,7 @@ function auditedCalls(): readonly ChildProcessCall[] {
 }
 
 function isAllowlisted(call: ChildProcessCall): boolean {
-  return ALLOWLIST.some((entry) => entry.file === call.file && entry.callee === call.callee)
+  return ALLOWLIST.some((entry) => entry.file === call.file && entry.callee === call.callee && call.text.includes(entry.via))
 }
 
 describe("utils win32 console suppression", () => {
@@ -137,7 +162,7 @@ describe("utils win32 console suppression", () => {
       const calls = auditedCalls()
 
       // when
-      const stale = ALLOWLIST.filter((entry) => !calls.some((call) => call.file === entry.file && call.callee === entry.callee))
+      const stale = ALLOWLIST.filter((entry) => !calls.some((call) => call.file === entry.file && call.callee === entry.callee && call.text.includes(entry.via)))
 
       // then
       expect(stale).toEqual([])
@@ -154,6 +179,7 @@ describe("utils win32 console suppression", () => {
       // then
       expect(asyncOptions.windowsHide).toBe(true)
       expect(syncOptions.windowsHide).toBe(true)
+      expect(createBunSpawnOptions(options)).toEqual({ cwd: "/tmp", windowsHide: true })
     })
   })
 
@@ -170,6 +196,20 @@ describe("utils win32 console suppression", () => {
 
       // then
       expect(calls.map((call) => call.callee)).toEqual(["run"])
+      expect(calls[0]?.text.includes("windowsHide: true")).toBe(false)
+    })
+  })
+
+  describe("#given a Bun.spawn call without the flag", () => {
+    test("#when the source is audited #then the call is reported, not silently skipped", () => {
+      // given
+      const source = 'const proc = Bun.spawn(["cmd.exe", "/c", "npm.cmd"], { stdout: "pipe" })'
+
+      // when
+      const calls = collectCalls("fixture.ts", source)
+
+      // then
+      expect(calls.map((call) => call.callee)).toEqual(["Bun.spawn"])
       expect(calls[0]?.text.includes("windowsHide: true")).toBe(false)
     })
   })
