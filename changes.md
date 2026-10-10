@@ -4,6 +4,10 @@
 
 `packages/utils/src/windows-console-hide.test.ts` walks the whole utils source tree like the #8501 gates do and fails on any `node:child_process` spawn, exec, execFile or fork call without `windowsHide: true`, unless an allowlist entry names its reason (the `runtime/spawn.ts` Node fallback, whose options helpers set the flag on win32; the gate asserts that too). The flag is inert on posix.
 
+## 2026-10-10 - lazycodex plugin scripts no longer open console windows on Windows (#9838)
+
+Every `node:child_process` call in `packages/omo-codex/plugin/scripts/` now passes `windowsHide: true`. The worst offender was the background auto-update in `auto-update.mjs`, which ran `cmd.exe /c npm.cmd` detached from a Codex hook and so got its own console window on every update. The `auto-update-plan.mjs` version probe and manual-update runner, and the plugin build scripts, had the same gap. `plugin/test/windows-console-hide.test.mjs` walks every plugin script and fails on any spawn, exec, execFile or fork call without the flag (allowlist with a reason per entry, empty today), and refuses namespace, default or `require` imports of `child_process` that it could not audit.
+
 ## 2026-10-09 - Warn on logout unless the server revoked the device (#9833)
 
 A refresh refusal during logout suppresses the unconfirmed-revocation warning only when the service guarantees the device is already revoked: `account_deleted`, and `reauth_required`, which the service returns on refresh only after revoking the device for token reuse. `unauthorized` and `invalid_grant` leave the device's slot held, so logout clears locally, makes no revoke attempt, and points to the account's Devices page.
