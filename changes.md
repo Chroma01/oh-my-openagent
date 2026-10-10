@@ -1,3 +1,7 @@
+## 2026-10-10 - Run hook commands without a console window on Windows (#7144)
+
+`executeHookCommand` now spawns every Claude-compatible hook command with `windowsHide: true`, matching the `taskkill` spawn beside it. A console-less host (an IDE- or GUI-launched `opencode serve`) used to get a fresh console per hook: a conhost flash echoing the hook JSON, or, with Windows Terminal as the default terminal, a full terminal window that took focus on every prompt and tool event. `execute-hook-command.windows-console.test.ts` pins the spawn options; the flag is inert on posix.
+
 ## 2026-10-09 - Warn on logout unless the server revoked the device (#9833)
 
 A refresh refusal during logout suppresses the unconfirmed-revocation warning only when the service guarantees the device is already revoked: `account_deleted`, and `reauth_required`, which the service returns on refresh only after revoking the device for token reuse. `unauthorized` and `invalid_grant` leave the device's slot held, so logout clears locally, makes no revoke attempt, and points to the account's Devices page.
