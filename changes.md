@@ -1,3 +1,7 @@
+## 2026-10-10 - Hide console windows on the Bun spawn path (#9840)
+
+`@oh-my-opencode/utils/runtime` `spawn()` / `spawnSync()` prefer `Bun.spawn` / `Bun.spawnSync` under Bun and passed no `windowsHide` there, while the Node fallback already set it on win32. Both Bun calls now go through `createBunSpawnOptions`, which adds `windowsHide: true` (Bun applies it only on Windows). The utils `windows-console-hide` gate now also audits `Bun.spawn*` and runtime-handle `bun.spawn*` calls. An allowlisted call must pass through the options helper its entry names, and the gate asserts that each helper sets the flag.
+
 ## 2026-10-10 - Run hook commands without a console window on Windows (#7144)
 
 `executeHookCommand` now spawns every Claude-compatible hook command with `windowsHide: true`, matching the `taskkill` spawn beside it. A console-less host (an IDE- or GUI-launched `opencode serve`) used to get a fresh console per hook: a conhost flash echoing the hook JSON, or, with Windows Terminal as the default terminal, a full terminal window that took focus on every prompt and tool event. The `sg --version` probe in `ast-grep/sg-resolver.ts` and the `where bash` lookup in `runtime/git-bash.ts` had the same gap and now pass the flag too.
