@@ -1,3 +1,7 @@
+## 2026-10-10 - unspecified-low runs GPT-6.1 Sol on the OpenAI lanes (#9844)
+
+`unspecified-low` had no GPT-6.1 Sol rung, so an OpenAI-only machine (ChatGPT subscription or OpenAI API) ran `gpt-5.6-terra (high)`. `packages/model-core/src/category-model-requirements.ts` and the Senpi mirror in `packages/senpi-task/src/category/fallback-chains.ts` add `gpt-6.1-sol (medium)` on `openai|chatgpt-subscription` directly before the Terra rung, the effort every other 6.1 Sol default uses. Terra stays behind it unchanged, so GitHub Copilot, OpenCode Zen and a registry without 6.1 Sol resolve the lane as before, and the Claude Sonnet 5.5 head (#9144) is unchanged. No other category had a stale GPT-5.6 lead: `quick` leads with GPT-6 Luna Fast, `deep-low` with GPT-6.1 Sol, `deep-high`/`ultrabrain` with GPT-6 Astra. The four chain-pin tests and the docs rows follow; the Senpi extension bundles are regenerated (`build-extension.mjs --check` current).
+
 ## 2026-10-10 - Hide console windows on the Bun spawn path (#9840)
 
 `@oh-my-opencode/utils/runtime` `spawn()` / `spawnSync()` prefer `Bun.spawn` / `Bun.spawnSync` under Bun and passed no `windowsHide` there, while the Node fallback already set it on win32. Both Bun calls now go through `createBunSpawnOptions`, which adds `windowsHide: true` (Bun applies it only on Windows). The utils `windows-console-hide` gate now also audits `Bun.spawn*` and runtime-handle `bun.spawn*` calls. An allowlisted call must pass through the options helper its entry names, and the gate asserts that each helper sets the flag.

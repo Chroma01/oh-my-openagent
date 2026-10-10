@@ -126,6 +126,9 @@ export const CATEGORY_FALLBACK_CHAINS: Readonly<Record<string, readonly Delegate
     },
     { providers: ["xiaomi", "opencode-go"], model: "mimo-v2.6-pro", variant: "high" },
     { providers: ["xai", "github-copilot", "opencode-go"], model: "grok-4.7", variant: "xhigh" },
+    // GPT-6.1 Sol is the current GPT default, served only by the OpenAI lanes; GPT-5.6 Terra stays
+    // behind it so Copilot, OpenCode Zen and a registry without 6.1 still resolve the lane (#9844).
+    { providers: ["chatgpt-subscription", "openai"], model: "gpt-6.1-sol", variant: "medium" },
     {
       providers: ["chatgpt-subscription", "openai", "github-copilot", "opencode"],
       model: "gpt-5.6-terra",
