@@ -5,10 +5,6 @@
     "senpi-qa-evidence-",
     "senpi-qa-not-git-"
   ],
-  "agents-md-core": [
-    "agents-md-core-injector-",
-    "agents-md-core-outside-"
-  ],
   "ast-grep-mcp": [
     "omo-rewrite-",
     "omo-scan-",
@@ -100,18 +96,6 @@
     "unsupported.txt$",
     "valid.jsonc$",
     "valid.md$"
-  ],
-  "comment-checker-core": [
-    "cc-cache-",
-    "comment-checker-package-binary-"
-  ],
-  "get-worker": [
-    "omo-install-preamble-",
-    "omo-installer-other-"
-  ],
-  "git-bash-mcp": [
-    "omo-git-bash-run-",
-    "omo-git-bash-runner-"
   ],
   "isolation-core": [
     "isolation-core-",
@@ -270,9 +254,6 @@
     "lsp-tools-project-path-list-",
     "lsp-tools-project-tune-",
     "lsp-workspace-"
-  ],
-  "mcp-client-core": [
-    "mcp-oauth-test-"
   ],
   "memory-core": [
     "acquire-contended-wait-",
@@ -1506,14 +1487,6 @@
     "openclaw-session-registry-",
     "opencode$"
   ],
-  "postinstall.test.ts": [
-    "omo-postinstall-fixture-",
-    "omo-postinstall-hanging-opencode-"
-  ],
-  "rules-engine": [
-    "rules-engine-finder-",
-    "rules-engine-project-root-"
-  ],
   "script": [
     "ci-leg-guard-",
     "cli-node-isolated-",
@@ -1898,12 +1871,6 @@
     "telemetry-core-record-",
     "telemetry-core-state-"
   ],
-  "test-hermetic-home.test.ts": [
-    "omo-shards-"
-  ],
-  "tests": [
-    "edit-ops-"
-  ],
   "tmux-core": [
     "Mobile Documents$",
     "bin$",
@@ -1964,9 +1931,5 @@
     "runtime-node-fallback-",
     "spawn.mjs$",
     "state.json$"
-  ],
-  "web": [
-    "omo-og-fonts-",
-    "web-retention-"
   ]
 }
